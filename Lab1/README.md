@@ -2,84 +2,77 @@
 
 Phân tích email phishing
 
-# 1. Kiến thức cần có
-
-## **1. Phishing Email là gì?**
-
-- Nguồn gốc của từ **Phishing** là sự kết hợp của 2 từ: **Fishing for information** (câu thông tin) và **phreaking** (trò lừa đảo). Vì có sự tương quan về mặt ý nghĩa giữa việc “câu cá” và “câu thông tin người dùng”, hình thức này được phát hiện lần đầu tiên vào năm 1987.
+## 1. Kiến thức cần có
+ Nguồn gốc của từ **Phishing** là sự kết hợp của 2 từ: **Fishing for information** (câu thông tin) và **phreaking** (trò lừa đảo). Vì có sự tương quan về mặt ý nghĩa giữa việc “câu cá” và “câu thông tin người dùng”, hình thức này được phát hiện lần đầu tiên vào năm 1987.
 - Nội dung của **Phishing Email** được thiết kế gần giống với giao diện ngân hàng, tổ chức. Người dùng dễ dàng bị "lừa" nếu không để ý và tin rằng đó là email thật, sau đó họ dễ dàng cung cấp những **thông tin** cá nhân quan trọng như: **Mật khẩu** đăng nhập hệ thống, **mật khẩu** giao dịch, thẻ tín dụng và các thông tin tuyệt mật khác.
 
-## 2. Các loại Phishing Email phổ biến
+- Các loại Phishing Email phổ biến
 
-- Phishing Email giả mạo thông báo Email Doanh Nghiệp overload data.
-- Phishing Email giả mạo đặt hàng.
-- Phishing Email giả mạo cơ quan nhà nước.
-- Phishing Email giả mạo người quen cũ.
-- Phishing Email giả mạo thanh toán online.
-- Phishing Email giả mạo thông báo quá hạn thanh toán.
-- Phishing Email giả mạo thông báo trúng thưởng.
-- …
+  - Phishing Email giả mạo thông báo Email Doanh Nghiệp overload data.
+  - Phishing Email giả mạo đặt hàng.
+  - Phishing Email giả mạo cơ quan nhà nước.
+  - Phishing Email giả mạo người quen cũ.
+  - Phishing Email giả mạo thanh toán online.
+  - Phishing Email giả mạo thông báo quá hạn thanh toán.
+  - Phishing Email giả mạo thông báo trúng thưởng.
+  - …
 
-## 3. Các thành phần của một email
+- Các thành phần của một email
 
-### 1. Header
+  -  Header
 
-- Routing / Transport (đường đi của mail)
-  ```powershell
-  Received:
-  Received:
-  Received:
-  ```
-- Authentication (xác thực)
-  ```powershell
-  Authentication-Results:
-  Received-SPF:
-  ```
-  → SPF / DKIM / DMARC / CompAuth
-- Identity (ai gửi – ai nhận)
-  ```powershell
-  From:
-  To:
-  Return-Path:
-  Message-Id:
-  Date:
-  Subject:
-  ```
-  → Phần này dễ bị giả → SOC phải đối chiếu với routing.
-- Anti-spam / Mail gateway verdict
-  ```powershell
-  X-MS-Exchange-Organization-SCL: 5
-  X-Microsoft-Antispam: BCL:9;
-  ```
+    - Routing / Transport
+      ```powershell
+      Received:
+      Received:
+      Received:
+      ```
+    - Authentication
+      ```powershell
+      Authentication-Results:
+      Received-SPF:
+      ```
+      → SPF / DKIM / DMARC / CompAuth
+    - Identity (ai gửi – ai nhận)
+      ```powershell
+      From:
+      To:
+      Return-Path:
+      Message-Id:
+      Date:
+      Subject:
+      ```
+      → Phần này dễ bị giả → SOC phải đối chiếu với routing.
+    - Anti-spam / Mail gateway verdict
+      ```powershell
+      X-MS-Exchange-Organization-SCL: 5
+      X-Microsoft-Antispam: BCL:9;
+      ```
 
-### 2. Body
+- Body
 
-- Nội dung body bắt đầu từ một khối base64 lớn sau một dòng space. Khi decode, chính là nội dung html đã thấy.
+  - Nội dung body bắt đầu từ một khối base64 lớn sau một dòng space. Khi decode, chính là nội dung html đã thấy.
 
-### 3. Link & Attachment
+- Link & Attachment
 
-- Link(URL) : mục tiêu là đưa user tới:
-  - Trang giả mạo đăng nhập
-  - Trang tải malware
-- Attachment
-  Các loại nguy hiểm:
-  - `.html` → fake login page
-  - `.docm` → macro
-  - `.zip` → che giấu file thực thi
-  - `.exe` → malware trực tiếp
+  - Link : mục tiêu là đưa user tới:
+    - Trang giả mạo đăng nhập
+    - Trang tải malware
+  - Attachment
+    Các loại nguy hiểm:
+    - `.html` → fake login page
+    - `.docm` → macro
+    - `.zip` → che giấu file thực thi
+    - `.exe` → malware trực tiếp
 
-# 2. Chuẩn bị:
-
-- Tải và cài đặt thunderbird để phân tích email
-- Tải một email phishing mẫu để phân tích
+## 2. Phân tích email:
+- mình sử dụng email phishing mẫu này để phân tích
 
 [https://github.com/rf-peixoto/phishing_pot/blob/main/email/sample-1.eml](https://github.com/rf-peixoto/phishing_pot/blob/main/email/sample-1.eml)
 
-# 3. Phân tích email:
-
 ![image.png](images/image.png)
 
-## Bước 1: — Identity
+### Bước 1: — Identity
 
 ![image.png](images/image%201.png)
 
@@ -103,7 +96,7 @@ root@ubuntu-s-1vcpu-1gb-35gb-intel-sfo3-06
 
 ⇒ Kết luận sơ bộ: kiểu Phishing Email là spoofed brand
 
-## Bước 2: — Received Chain
+### Bước 2: — Received Chain
 
 - Đọc `Received` từ dưới lên
 
@@ -126,9 +119,8 @@ Sau đó mail đi qua:
 
 → IOC cần ghi là IP address `137.184.34.4`
 
-## BƯỚC 3 — Authentication (SPF / DKIM / DMARC)
+### BƯỚC 3 — Authentication (SPF / DKIM / DMARC)
 
-- Lý thuyết:
   - `SPF` (Sender Policy Framework): bản ghi liệt kê các IP được phép gửi email thay cho domain
   - `DKIM` (DomainKeys Identified Mail) : thêm chữ ký số để xem email có bị sửa trong khi gửi không
   - `DMARC` (Domain-based Message Authentication, Reporting, and Conformance): chính sách xử lý khi email đó là giả
@@ -141,7 +133,7 @@ Sau đó mail đi qua:
 - `dmarc` = `temperror` là không bảo vệ domain
 - `compauth` = `fail` Microsoft đánh giá email này không đáng tin
 
-## Bước 4: — Phân tích body
+### Bước 4: — Phân tích body
 
 - Link khi bấm `Clique aqui` hoặc decode base64 trong body email
   ```powershell
@@ -149,9 +141,9 @@ Sau đó mail đi qua:
   ```
   → domain hoàn toàn không liên quan đếnBradesco
 
-→ IOC cần ghi là Domain [`blog1seguimentmydomain2bra.me`](http://blog1seguimentmydomain2bra.me)
+→ IOC: [`blog1seguimentmydomain2bra.me`](http://blog1seguimentmydomain2bra.me)
 
-# 4. Kết luận cho email này
+## 4. Kết luận
 
 - Nguồn gửi: VPS linux ( root@ubuntu)
 - IP source: 137.184.34.4
@@ -168,7 +160,7 @@ Sau đó mail đi qua:
 
 → Action: block IP + IOC
 
-# 5. Mapping MITRE ATT&CK
+## 5. Mapping MITRE ATT&CK
 
 - TACTIC: Initial Access
 - Technique chính: `T1566` - Phishing

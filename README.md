@@ -1,6 +1,7 @@
-# Triển khai hệ thống SIEM và mô phỏng quy trình Giám sát, Điều tra các mối đe dọa bảo mật
 
-- [Lab 0](./Lab0/): Xây dựng môi trường giả lập và cài đặt Splunk Enterprise
+##Triển khai hệ thống SIEM với Splunk, mô phỏng và điều tra các cuộc tấn công.
+
+- [Lab 0](./Lab0/): Xây dựng môi trường và Splunk SIEM
 
 ---
 
@@ -8,20 +9,19 @@
 
 ---
 
-- [Lab 2](./Lab2/): Phát hiện và điều tra tấn công Brute-Force dịch vụ RDP trên Windows
+- [Lab 2](./Lab2/): Brute-Force dịch vụ RDP trên Windows
 
 ---
 
-- [Lab 3](./Lab3/): Giám sát thay đổi Windows Registry bằng Splunk
+- [Lab 3](./Lab3/): Giám sát thay đổi Windows Registry
 
 ---
 
-- [Lab 4](./Lab4/): Phát hiện và điều tra tấn công Brute-Force dịch vụ SSH trên linux
+- [Lab 4](./Lab4/): Brute-Force dịch vụ SSH trên linux
 
 ---
 
-- [Lab 5](./Lab5/): Thiết lập hệ thống giám sát mạng bằng Suricata và Splunk để phát hiện các hành vi bất thường trong lưu lượng mạng
-
+- [Lab 5](./Lab5/): Thiết lập hệ thống giám sát mạng bằng Suricata và Splunk
 ---
 
 - [Lab 6](./Lab6/): Điều tra hoạt động Powershell đáng ngờ trên Windows

