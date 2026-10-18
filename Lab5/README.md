@@ -195,40 +195,14 @@ sudo journalctl -u suricata --no-pager -n 50
 nmap -sS -T4 -p- 192.168.60.40
 ```
 
-- **`sS` (TCP SYN Scan)**:
-  - Đây là kiểu quét "nửa mở" (half-open). Nmap gửi một gói tin SYN (yêu cầu kết nối) đến mục tiêu.
-  - Nếu nhận được gói SYN/ACK, cổng đó đang **Mở (Open)**.
-  - Nếu nhận được gói RST, cổng đó đang **Đóng (Closed)**.
-  - **Ưu điểm:** Nmap không hoàn tất quá trình bắt tay ba bước (3-way handshake), giúp việc quét diễn ra nhanh hơn và ít để lại dấu vết trong log của ứng dụng hơn so với kiểu quét `sT`.
-- **`T4` (Timing Template)**:
-  - Thiết lập mức độ nhanh/chậm của quá trình quét trên thang điểm từ 0 đến 5.
-  - `T4` là mức **Aggressive** (Mạnh mẽ): Nó tăng tốc độ quét bằng cách giảm thời gian chờ đợi phản hồi, phù hợp cho các mạng nội bộ hoặc đường truyền internet ổn định hiện nay (2026).
-- **`p-`**:
-  - Ký hiệu này yêu cầu Nmap quét **tất cả các cổng** từ 1 đến 65535.
-  - Nếu không có tùy chọn này, mặc định Nmap chỉ quét 1.000 cổng phổ biến nhất. Việc dùng `p-` giúp bạn đảm bảo không bỏ sót bất kỳ dịch vụ chạy trên cổng lạ nào.
-- Có thể vừa scan vừa mở `sudo tail -f /var/log/suricata/eve.json` để xem log đổ vào trực
-  tiếp.
-
   ![image.png](images/image%201.png)
 
 → Tìm thấy cổng 22 đang mở
 
 ## 2. Thực hiện Nikto Scan, coi máy Ubuntu victim là một Web Server.
 
-- **Mục tiêu:** Tạo ra lưu lượng HTTP lớn trong thời gian ngắn để kích hoạt các rule về DoS hoặc lưu lượng bất thường.
-- **Chuẩn bị:** Đảm bảo máy Ubuntu Victim (192.168.60.40) đang chạy một Web Server (Apache hoặc Nginx). Nếu chưa có, hãy cài nhanh trên Ubuntu:
-
-  ```powershell
-  # 1. Cài đặt Apache
-  sudo apt update
-  sudo apt install apache2 -y
-
-  # 2. Bật dịch vụ và kiểm tra trạng thái
-  sudo systemctl enable --now apache2
-  sudo systemctl status apache2
-  ```
-
-- **Dùng Nikto (Tạo nhiều Alert về Scan/Web Attack)**
+- **Chuẩn bị:** Đảm bảo máy Ubuntu Victim (192.168.60.40) đang chạy một Web Server Apache.
+- **Dùng Nikto**
   Lệnh này sẽ quét server và tạo ra hàng trăm request chứa các mẫu tấn công đã biết.
   `powershell
 nikto -h http://192.168.60.40
@@ -296,12 +270,11 @@ nikto -h http://192.168.60.40
   `time local`: 1/14/26 5:03:51.889 PM
 - `dest_ip`: 192.168.60.40
 - `source_ip`: 192.168.60.10
-- `Severity`: low (đây mới là bước thăm dò, chưa xâm nhập thành công)
+- `Severity`: low - đây mới là bước thăm dò, chưa xâm nhập thành công.
 - Tiếp theo cần điều tra xem attacker với `ip=192.168.60.10` đã quét được cổng nào mở chưa và kiểm tra xem có xâm nhập thành công không.
-- MAPPING MITTRE ATT&CK
-  - Network Service Discovery: T1046
-  - Tức là khám phá khi đang trong mạng nội bộ.
-  - Nếu là scan từ mạng ngoài vào thì **[Reconnaissance](https://attack.mitre.org/tactics/TA0043)** - Vulnerability Scanning (T1595.002).
+- Mapping MITTRE ATT&CK
+  - Discovery: Network Service Discovery - T1046
+  - Reconnaissance: Active Scanning: Scanning IP Blocks - T1595.001
 
 ## 2. Phát hiện Nikto Scan
 
@@ -311,7 +284,7 @@ nikto -h http://192.168.60.40
   ```powershell
   {"timestamp":"2026-01-14T21:43:29.866420+0700","flow_id":999495050042074,"in_iface":"ens33","event_type":"flow","src_ip":"192.168.60.10","src_port":54910,"dest_ip":"192.168.60.40","dest_port":80,"proto":"TCP","app_proto":"http","flow":{"pkts_toserver":19,"pkts_toclient":24,"bytes_toserver":4173,"bytes_toclient":18464,"start":"2026-01-14T21:42:19.298249+0700","end":"2026-01-14T21:42:19.331253+0700","age":0,"state":"closed","reason":"timeout","alerted":true},"tcp":{"tcp_flags":"1b","tcp_flags_ts":"1b","tcp_flags_tc":"1b","syn":true,"fin":true,"psh":true,"ack":true,"state":"closed","ts_max_regions":1,"tc_max_regions":1}}
   ```
-- Tóm tắt: Hệ thống giám sát Suricata đã ghi nhận các luồng kết nối mạng (Network Flows) bất thường giữa máy trạm nội bộ (`192.168.60.10`) và máy chủ Web nội bộ (`192.168.60.40`). Phân tích kỹ thuật cho thấy dấu hiệu của hành vi dò quét lỗ hổng web tự động (Automated Web Scanning), cụ thể là công cụ Nikto. Hệ thống IDS đã kích hoạt cảnh báo (`alerted: true`) đối với luồng giao thông này.
+- Tóm tắt: Hệ thống giám sát Suricata đã ghi nhận các kết nối mạng bất thường giữa máy `192.168.60.10` và máy chủ Web `192.168.60.40`. Đây là dấu hiệu của hành vi dò quét lỗ hổng web tự động bẵng công cụ Nikto.
 - `timestamp`: 2026-01-14T21:43:28.869713+0700
   `Time local`: 1/14/26 9:43:28.869 PM
 - `src_ip`: 192.168.60.10
@@ -319,29 +292,24 @@ nikto -h http://192.168.60.40
 - `dest_ip`: 192.168.60.40
   `dest_port`: 80
 - Dịch vụ bị tấn công: Port 80/TCP
-- Mã định danh luồng: 999495050042074
 - Các dấu hiệu chứng minh
-  - Dấu hiệu 1: Cờ báo động (`alerted: true`)
-    - _Ý nghĩa:_ Điều này xác nhận rằng trong quá trình kết nối này diễn ra, Suricata đã phát hiện vi phạm và đã sinh ra một Alert (nhưng Alert đó nằm ở file log khác). Đây là bằng chứng thép cho thấy đây không phải truy cập web thông thường.
-  - Dấu hiệu 2: Mô hình gói tin (Packet Pattern)
-    - `pkts_toserver: 19` (Gửi 19 gói)
-    - `pkts_toclient: 24` (Nhận 24 gói)
-    - _Phân tích:_ Tỷ lệ gói tin 1:1 (gần như gửi 1 hỏi - nhận 1 đáp). Đây là đặc thù của tool scan: Gửi request dò file -> Server trả lời (404 hoặc 200) -> Ngắt kết nối để dò file tiếp theo.
-  - Dấu hiệu 3: Thời gian tồn tại (`age: 0`)
-    - Kết nối mở và đóng ngay lập tức (trong tíc tắc). Người dùng lướt web bình thường sẽ giữ kết nối lâu hơn để tải ảnh, CSS, JS. Chỉ có Bot/Scanner mới hành động nhanh như vậy.
-  - Dấu hiệu 4: Cờ TCP (`tcp_flags: 1b`)
+  - Dấu hiệu 1: `alerted: true`
+    - _Ý nghĩa:_ Điều này xác nhận rằng trong quá trình kết nối này diễn ra, Suricata đã phát hiện vi phạm và đã sinh ra một Alert. Đây là bằng chứng thép cho thấy đây không phải truy cập web thông thường.
+  - Dấu hiệu 2: Thời gian tồn tại (`age: 0`)
+    - Kết nối mở và đóng ngay lập tức. Người dùng lướt web bình thường sẽ giữ kết nối lâu hơn để tải ảnh, CSS, JS. Chỉ có Bot/Scanner mới hành động nhanh như vậy.
+  - Dấu hiệu 3: `tcp_flags: 1b`
     - Cờ `1b` (Hex) tương ứng với `FIN, PSH, ACK, SYN`.
     - Sự xuất hiện của cả `SYN` (mở) và `FIN` (đóng) trong cùng một log flow ngắn xác nhận đây là một chu trình kết nối TCP hoàn chỉnh nhưng cực ngắn.
 - Kết luận & Đánh giá tác động
-  - Loại tấn công: Reconnaissance / Web Scanning (Thăm dò).
+  - Loại tấn công: Reconnaissance / Web Scanning.
   - Công cụ nghi ngờ: Nikto
   - Tác động:
-    - Kẻ tấn công đã thực hiện kết nối thành công tới Web Server (`state: closed` nghĩa là kết nối đã hoàn tất, không bị Firewall chặn).
+    - Kẻ tấn công đã thực hiện kết nối thành công tới Web Server (`state: closed` nghĩa là kết nối đã hoàn tất.
     - Máy chủ Web đã phản hồi lại (`bytes_toclient: 18464` ~ 18KB dữ liệu trả về). Kẻ tấn công có thể đã thu thập được thông tin về phiên bản Server hoặc các file tồn tại.
-- Khuyến nghị xử lý (Remediation)
-  - Truy vết chéo (Cross-Reference): Sử dụng `flow_id: 999495050042074` để tìm log Alert tương ứng trong Splunk nhằm biết chính xác tên rule bị vi phạm
-  - Kiểm tra Access Log: Đối chiếu thời gian `21:43:29` với log của Apache trên máy nạn nhân để xem kẻ tấn công đã dò trúng file nhạy cảm nào không (tìm mã phản hồi 200 OK).
-  - Ngăn chặn (Block): IP `192.168.60.10` cần bị đưa vào danh sách đen (Blacklist) hoặc cách ly khỏi mạng ngay lập tức.
+- Khuyến nghị xử lý
+  - Truy vết chéo: Sử dụng `flow_id: 999495050042074` để tìm log Alert tương ứng trong Splunk nhằm biết chính xác tên rule bị vi phạm
+  - Kiểm tra Access Log: Đối chiếu thời gian `21:43:29` với log của Apache trên máy nạn nhân để xem kẻ tấn công đã dò trúng file nhạy cảm nào không, tìm mã phản hồi 200 OK.
+  - Block IP `192.168.60.10` cần bị đưa vào Blacklist hoặc cách ly khỏi mạng ngay lập tức.
 - MAPPING ATT&CK
   - Tactic: Reconnaissance
   - Technique: Active Scanning: Vulnerability Scanning
@@ -356,30 +324,30 @@ nikto -h http://192.168.60.40
   ```powershell
   {"timestamp":"2026-01-15T00:08:57.383070+0700","flow_id":2018804101003655,"in_iface":"ens33","event_type":"flow","src_ip":"192.168.60.40","src_port":50906,"dest_ip":"192.168.60.10","dest_port":4444,"proto":"TCP","app_proto":"failed","flow":{"pkts_toserver":21,"pkts_toclient":22,"bytes_toserver":1633,"bytes_toclient":1478,"start":"2026-01-14T23:53:19.011287+0700","end":"2026-01-15T00:07:50.110435+0700","age":871,"state":"closed","reason":"timeout","alerted":false},"tcp":{"tcp_flags":"1b","tcp_flags_ts":"1b","tcp_flags_tc":"1b","syn":true,"fin":true,"psh":true,"ack":true,"state":"closed","ts_max_regions":1,"tc_max_regions":1}}
   ```
-- Tóm tắt: Vào lúc 23:53:19 ngày 14/01/2026, hệ thống giám sát mạng ghi nhận một kết nối bất thường khởi tạo từ máy chủ nội bộ (`192.168.60.40`) đi ra máy trạm nghi vấn (`192.168.60.10`). Kết nối này sử dụng cổng 4444 và duy trì trong 14 phút 31 giây.
-  Dựa trên phân tích hành vi và giao thức, chúng tôi kết luận đây là một kết nối Reverse Shell thành công, cho phép kẻ tấn công thực thi lệnh từ xa trên máy chủ nạn nhân. Hệ thống IDS tự động (Suricata) đã không phát hiện (False Negative) hành vi này dưới dạng Alert, mà chỉ ghi nhận dưới dạng Flow log.
+- Tóm tắt: Vào lúc 23:53:19 ngày 14/01/2026, hệ thống giám sát mạng ghi nhận một kết nối bất thường khởi tạo từ máy chủ `192.168.60.40` đi ra máy trạm `192.168.60.10`. Kết nối này sử dụng cổng 4444 và duy trì trong 14 phút 31 giây.
+  Dựa trên phân tích hành vi và giao thức, chúng tôi kết luận đây là một kết nối Reverse Shell thành công, cho phép kẻ tấn công thực thi lệnh từ xa trên máy chủ nạn nhân. Hệ thống IDS đã không phát hiện (False Negative) hành vi này dưới dạng Alert, mà chỉ ghi nhận dưới dạng Flow log.
 - `timestamp`: 2026-01-15T00:08:57.383070+0700
   `time local`: 1/15/26 12:08:57.383 AM
 - `app_proto`: `failed`
-  Điều này chỉ ra rằng giao thức truyền tải không phải là các chuẩn thông thường (HTTP, SSH, DNS) mà Suricata có thể giải mã. Đây là đặc trưng của Raw TCP Shell (như Netcat hoặc Bash TCP), nơi dữ liệu chỉ là các dòng văn bản (text command) thô sơ gửi qua lại.
+  Điều này chỉ ra rằng giao thức truyền tải không phải là các chuẩn thông thường (HTTP, SSH, DNS) mà Suricata có thể giải mã. Đây là đặc trưng của Raw TCP Shell (như Netcat hoặc Bash TCP), nơi dữ liệu chỉ là các dòng văn bản thô sơ gửi qua lại.
 - `src_ip`: 192.168.60.40
   `src_port`: 50906
 - `dest_ip`: 192.168.60.10
   `dest_port`: 4444
-- Đánh giá rủi ro & Lỗ hổng giám sát (Critical Findings)
-  - Trạng thái phát hiện: MISS (Bỏ lọt).
-    - Trường `"alerted": false` trong log cho thấy Suricata không kích hoạt bất kỳ luật (rule) nào cho hành vi này.
-    - Nguyên nhân: Kẻ tấn công sử dụng lệnh `bash` hoặc `nc` thuần túy, không có chữ ký mã độc (malware signature) cụ thể trong payload, hoặc cấu hình Rule chưa bao phủ việc chặn kết nối outbound tới cổng lạ.
-  - Tác động: Kẻ tấn công đã có toàn quyền thực thi lệnh (RCE) với quyền của user chạy web service (thường là `www-data`). Nếu kẻ tấn công leo quyền thành công trong 14 phút đó, toàn bộ máy chủ đã bị thỏa hiệp (Compromised).
-- Mapping MITRE ATT&CK
-- **Tactic:** [TA0011] Command and Control (C2).
-- **Technique:** [T1095] Non-Application Layer Protocol (Sử dụng cổng 4444 raw socket).
-- **Technique:** [T1059.004] Command and Scripting Interpreter: Unix Shell (Sử dụng Bash để kết nối).
+- Đánh giá rủi ro & Lỗ hổng giám sát
+  - Trạng thái phát hiện: MISS.
+    - Trường `"alerted": false` trong log cho thấy Suricata không kích hoạt bất kỳ rule nào cho hành vi này.
+    - Nguyên nhân: Kẻ tấn công sử dụng lệnh `bash` hoặc `nc` thuần túy, không có malware signature cụ thể trong payload, hoặc cấu hình Rule chưa bao phủ việc chặn kết nối outbound tới cổng lạ.
+  - Tác động: Kẻ tấn công đã có toàn quyền thực thi lệnh RCE với quyền của user chạy web service. Nếu kẻ tấn công leo quyền thành công trong 14 phút đó, toàn bộ máy chủ đã bị Compromised.
+
+ Mapping MITRE ATT&CK
+
+- Command and Control: Non-Application Layer Protocol - T1095
+- Command and Control: Command and Scripting Interpreter: Unix Shell - T1059.004
 - Khuyến nghị xử lý
-  - Cách ly (Isolate): Ngắt kết nối mạng của máy chủ `192.168.60.40` ngay lập tức để ngăn chặn hacker quay lại hoặc lan truyền ngang (Lateral Movement).
-  - Điều tra mở rộng (Forensic):
+  - Cách ly: Ngắt kết nối mạng của máy chủ `192.168.60.40` ngay lập tức để ngăn chặn hacker quay lại hoặc Lateral Movement.
+  - Điều tra mở rộng:
     - Kiểm tra `history` của user `www-data` hoặc `root` trên máy Ubuntu để xem trong 14 phút đó hacker đã gõ những lệnh gì.
-    - Kiểm tra xem hacker có tạo file mới (`/tmp`, `/var/tmp`) hoặc user mới để duy trì quyền truy cập (Persistence) không.
-  - Vá lỗ hổng (Hardening):
-    - Thiết lập Firewall (UFW/Iptables): CHẶN toàn bộ kết nối Outbound từ Web Server, chỉ cho phép các kết nối cần thiết (như update DB, DNS).
-    - Viết thêm Rule Suricata: Cảnh báo bất kỳ kết nối TCP nào đi ra cổng 4444.
+    - Kiểm tra xem hacker có tạo file mới hoặc user mới để duy trì quyền truy cập không.
+  - Thiết lập Firewall
+  - Viết thêm Rule Suricata: Cảnh báo bất kỳ kết nối TCP nào đi ra cổng 4444.
